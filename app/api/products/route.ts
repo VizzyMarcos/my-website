@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function GET() {
   try {
@@ -33,13 +38,20 @@ export async function POST(request: NextRequest) {
 
       const imageFile = formData.get('imageFile') as File | null;
       if (imageFile && imageFile.size > 0) {
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        await fs.promises.mkdir(uploadsDir, { recursive: true });
-        const fileName = `${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '')}`;
-        const filePath = path.join(uploadsDir, fileName);
         const arrayBuffer = await imageFile.arrayBuffer();
-        await fs.promises.writeFile(filePath, Buffer.from(arrayBuffer));
-        image = `/uploads/${fileName}`;
+        const buffer = Buffer.from(arrayBuffer);
+        
+        const uploadResult = await new Promise<any>((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            { folder: 'vicmart-products' },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          ).end(buffer);
+        });
+
+        image = uploadResult.secure_url;
       }
 
       productData = { name, price, description, stock, image };
@@ -55,11 +67,8 @@ export async function POST(request: NextRequest) {
     }
 
     const product = await Product.create(productData);
+    return NextResponse.json({ success: true, data: product }, { status: 201 });
 
-    return NextResponse.json(
-      { success: true, data: product },
-      { status: 201 }
-    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to create product' },
