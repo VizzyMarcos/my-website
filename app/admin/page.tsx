@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 
+const ADMIN_PASSWORD = 'Daddy424#';
+
 interface Product {
   _id: string;
   name: string;
@@ -15,6 +17,9 @@ interface Product {
 }
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -30,8 +35,36 @@ export default function AdminPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    fetchProducts();
+    const auth = sessionStorage.getItem('adminAuth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProducts();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = () => {
+    if (passwordInput === ADMIN_PASSWORD) {
+      sessionStorage.setItem('adminAuth', 'true');
+      setIsAuthenticated(true);
+      setPasswordError('');
+    } else {
+      setPasswordError('❌ Incorrect password. Try again.');
+      setPasswordInput('');
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminAuth');
+    setIsAuthenticated(false);
+    setPasswordInput('');
+  };
 
   const fetchProducts = async () => {
     try {
@@ -106,18 +139,11 @@ export default function AdminPage() {
         setMessage('✓ Product added successfully!');
       }
 
-      setFormData({
-        name: '',
-        price: '',
-        description: '',
-        image: '',
-        stock: '',
-      });
+      setFormData({ name: '', price: '', description: '', image: '', stock: '' });
       setImageFile(null);
       setEditingId(null);
       setShowForm(false);
       fetchProducts();
-
       setTimeout(() => setMessage(''), 3000);
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { error: string } }; message?: string };
@@ -155,14 +181,48 @@ export default function AdminPage() {
     setShowForm(false);
     setEditingId(null);
     setImageFile(null);
-    setFormData({
-      name: '',
-      price: '',
-      description: '',
-      image: '',
-      stock: '',
-    });
+    setFormData({ name: '', price: '', description: '', image: '', stock: '' });
   };
+
+  // 🔐 Password Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm">
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-2 text-center">Admin Access</h1>
+          <p className="text-sm text-slate-500 text-center mb-6">Enter your password to continue</p>
+
+          {passwordError && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm font-semibold text-center">
+              {passwordError}
+            </div>
+          )}
+
+          <input
+            type="password"
+            placeholder="Enter password"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900"
+          />
+
+          <button
+            onClick={handleLogin}
+            className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition"
+          >
+            Login
+          </button>
+
+          <div className="mt-4 text-center">
+            <Link href="/" className="text-sm text-slate-500 hover:underline">
+              ← Back to Store
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -176,9 +236,17 @@ export default function AdminPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Link href="/" className="text-primary hover:underline">
-          ← Back to Store
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="text-primary hover:underline">
+            ← Back to Store
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-4 py-2 rounded font-semibold hover:bg-red-600 text-sm"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -271,7 +339,6 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* Products Table */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-100 border-b">
@@ -292,7 +359,6 @@ export default function AdminPage() {
                       <span className="font-medium">{product.name}</span>
                     </div>
                   </td>
-
                   <td className="px-6 py-3 font-semibold">₦{product.price.toFixed(2)}</td>
                   <td className="px-6 py-3">
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
