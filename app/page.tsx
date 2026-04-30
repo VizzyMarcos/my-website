@@ -18,7 +18,7 @@ interface HomeProduct {
 async function getProducts(): Promise<HomeProduct[]> {
   try {
     await dbConnect();
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean().exec();
+    const products = await Product.find({}).sort({ createdAt: -1 }).limit(6).lean().exec();
     const typedProducts = products as Array<{
       _id: { toString(): string };
       name: string;
@@ -140,6 +140,15 @@ export default async function Home() {
               </p>
             </div>
           )}
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link
+            href="/products"
+            className="inline-block rounded-full bg-slate-900 px-8 py-3 font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-blue-600"
+          >
+            View All Products →
+          </Link>
         </div>
       </section>
     </div>
