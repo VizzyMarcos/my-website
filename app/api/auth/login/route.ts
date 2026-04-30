@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import { comparePassword } from '@/lib/hash';
-
-function createToken(userId: string) {
-  return Buffer.from(`${userId}:${Date.now()}`).toString('base64');
-}
+import { signToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,27 +10,35 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user || !comparePassword(password, user.password)) {
-      return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const token = createToken(user._id.toString());
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
 
-    return NextResponse.json({
+    const token = signToken(user._id.toString(), user.email);
+
+    const response = NextResponse.json({
       success: true,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token,
-      },
-    }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Login failed' }, { status: 500 });
+      user: { id: user._id, name: user.name, email: user.email }
+    });
+
+    response.cookies.set('vicmart-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return response;
+  } catch (error) {
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import { hashPassword } from '@/lib/hash';
+import { signToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,22 +10,37 @@ export async function POST(request: NextRequest) {
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
-      return NextResponse.json({ success: false, error: 'Missing fields' }, { status: 400 });
+      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return NextResponse.json({ success: false, error: 'Email is already registered' }, { status: 409 });
+      return NextResponse.json({ error: 'Email already registered' }, { status: 400 });
     }
 
-    const user = await User.create({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password: hashPassword(password),
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = await User.create({ name, email, password: hashedPassword });
+
+    const token = signToken(user._id.toString(), user.email);
+
+    const response = NextResponse.json({
+      success: true,
+      user: { id: user._id, name: user.name, email: user.email }
+    }, { status: 201 });
+
+    response.cookies.set('vicmart-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
     });
 
-    return NextResponse.json({ success: true, data: { id: user._id, name: user.name, email: user.email, role: user.role } }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Registration failed' }, { status: 500 });
+    return response;
+  } catch (error) {
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }
