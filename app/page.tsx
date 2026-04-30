@@ -3,6 +3,8 @@ import ProductCard from "@/components/ProductCard";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/lib/models/Product";
 
+export const revalidate = 0;
+
 interface HomeProduct {
   _id: string;
   name: string;
@@ -16,7 +18,7 @@ interface HomeProduct {
 async function getProducts(): Promise<HomeProduct[]> {
   try {
     await dbConnect();
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+    const products = await Product.find({}).sort({ createdAt: -1 }).lean().exec();
     const typedProducts = products as Array<{
       _id: { toString(): string };
       name: string;
