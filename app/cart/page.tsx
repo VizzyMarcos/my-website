@@ -50,7 +50,6 @@ export default function CartPage() {
           clearCart();
           return;
         }
-
         setStatusMessage(`Payment verification failed for order ${orderId}.`);
       })
       .catch((error) => {
@@ -95,6 +94,15 @@ export default function CartPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if user is logged in
+    const userStored = typeof window !== 'undefined' ? localStorage.getItem('vicmart-user') : null;
+    const user = userStored ? JSON.parse(userStored) : null;
+
+    if (!user) {
+      window.location.href = '/login?redirect=/cart';
+      return;
+    }
+
     if (!customer.name || !customer.email || !customer.phone) {
       setStatusMessage('Please enter customer details');
       return;
@@ -106,9 +114,6 @@ export default function CartPage() {
     }
 
     try {
-      const userStored = typeof window !== 'undefined' ? localStorage.getItem('vicmart-user') : null;
-      const user = userStored ? JSON.parse(userStored) : null;
-
       const orderPayload = {
         userId: user?.id || null,
         customerName: customer.name,
