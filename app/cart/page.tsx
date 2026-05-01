@@ -29,6 +29,19 @@ export default function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('none');
   const [statusMessage, setStatusMessage] = useState('');
 
+  // Restore saved checkout details after login redirect
+  useEffect(() => {
+    const saved = localStorage.getItem('vicmart-checkout');
+    if (saved) {
+      try {
+        const { customer: savedCustomer, paymentMethod: savedMethod } = JSON.parse(saved);
+        setCustomer(savedCustomer);
+        setPaymentMethod(savedMethod);
+      } catch (_) {}
+      localStorage.removeItem('vicmart-checkout');
+    }
+  }, []);
+
   useEffect(() => {
     fetchCartItems();
   }, [cart]);
@@ -40,32 +53,23 @@ export default function CartPage() {
     const canceled = urlParams.get('payment') === 'paystack_cancel';
 
     if (reference && orderId) {
-      axios.post('/api/verify-payment', {
-        orderId,
-        reference,
-      })
-      .then((response) => {
-        if (response.data.success) {
-          setStatusMessage(`Payment confirmed. Order ${orderId}.`);
-          clearCart();
-          return;
-        }
-        setStatusMessage(`Payment verification failed for order ${orderId}.`);
-      })
-      .catch((error) => {
-        console.error('Failed to verify Paystack payment', error);
-        setStatusMessage(`Payment verification failed for order ${orderId}.`);
-      });
+      axios.post('/api/verify-payment', { orderId, reference })
+        .then((response) => {
+          if (response.data.success) {
+            setStatusMessage(`Payment confirmed. Order ${orderId}.`);
+            clearCart();
+            return;
+          }
+          setStatusMessage(`Payment verification failed for order ${orderId}.`);
+        })
+        .catch((error) => {
+          console.error('Failed to verify Paystack payment', error);
+          setStatusMessage(`Payment verification failed for order ${orderId}.`);
+        });
     } else if (canceled && orderId) {
-      axios.patch(`/api/orders/${orderId}`, {
-        paymentStatus: 'failed',
-      })
-      .then(() => {
-        setStatusMessage(`Payment failed. Order ${orderId}.`);
-      })
-      .catch((error) => {
-        console.error('Failed to update order payment status', error);
-      });
+      axios.patch(`/api/orders/${orderId}`, { paymentStatus: 'failed' })
+        .then(() => setStatusMessage(`Payment failed. Order ${orderId}.`))
+        .catch((error) => console.error('Failed to update order payment status', error));
     }
 
     if (orderId || reference || canceled) {
@@ -94,11 +98,12 @@ export default function CartPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if user is logged in
     const userStored = typeof window !== 'undefined' ? localStorage.getItem('vicmart-user') : null;
     const user = userStored ? JSON.parse(userStored) : null;
 
     if (!user) {
+      // Save customer details and payment method before redirecting to login
+      localStorage.setItem('vicmart-checkout', JSON.stringify({ customer, paymentMethod }));
       window.location.href = '/login?redirect=/cart';
       return;
     }
@@ -165,7 +170,6 @@ export default function CartPage() {
           : error instanceof Error
             ? error.message
             : 'Unknown checkout error';
-
       setStatusMessage(`Checkout error: ${checkoutError}`);
     }
   };
@@ -238,9 +242,7 @@ export default function CartPage() {
                     <h3 className="text-xl font-extrabold tracking-tight text-slate-900">
                       {item.product?.name}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      N{item.product?.price}
-                    </p>
+                    <p className="mt-1 text-sm text-slate-500">N{item.product?.price}</p>
                   </div>
                   <div className="text-lg font-extrabold text-slate-900">
                     N{((item.product?.price || 0) * item.quantity).toFixed(2)}
@@ -252,20 +254,15 @@ export default function CartPage() {
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                       className="px-4 py-2 text-lg text-slate-600 transition hover:text-slate-900"
-                    >
-                      -
-                    </button>
+                    >-</button>
                     <span className="min-w-10 text-center font-bold text-slate-900">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                       className="px-4 py-2 text-lg text-slate-600 transition hover:text-slate-900"
-                    >
-                      +
-                    </button>
+                    >+</button>
                   </div>
-
                   <button
                     onClick={() => removeFromCart(item.productId)}
                     className="text-sm font-bold text-rose-500 transition hover:text-rose-600"
@@ -280,12 +277,8 @@ export default function CartPage() {
 
         <div className="glass-panel h-fit rounded-[30px] p-6 md:p-7">
           <div className="mb-6 space-y-2 border-b border-slate-200/80 pb-6">
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              Order Summary
-            </h2>
-            <p className="text-sm text-slate-500">
-              Complete your details and choose how you want to pay.
-            </p>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Order Summary</h2>
+            <p className="text-sm text-slate-500">Complete your details and choose how you want to pay.</p>
           </div>
 
           <div className="mb-6 space-y-3 border-b border-slate-200/80 pb-6 text-sm text-slate-600">
