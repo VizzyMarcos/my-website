@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,7 +20,7 @@ export default function LoginPage() {
     setError('');
     try {
       await axios.post('/api/auth/login', formData);
-      router.push('/');
+      router.push(redirect);
       router.refresh();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed');
