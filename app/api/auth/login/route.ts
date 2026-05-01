@@ -1,44 +1,101 @@
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/mongodb';
-import User from '@/lib/models/User';
-import { signToken } from '@/lib/auth';
+'use client';
 
-export async function POST(request: NextRequest) {
-  try {
-    await dbConnect();
-    const { email, password } = await request.json();
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import axios from 'axios';
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post('/api/auth/login', formData);
+      // Save user to localStorage so cart can read it
+      localStorage.setItem('vicmart-user', JSON.stringify(res.data.user));
+      router.push(redirect);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-[28px] shadow-xl shadow-slate-200/80 p-8">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-2xl text-white shadow-lg mb-4">
+              V
+            </Link>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Welcome back</h1>
+            <p className="text-slate-500 mt-2 text-sm">Sign in to your VicMart account</p>
+          </div>
 
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm font-semibold text-center">
+              {error}
+            </div>
+          )}
 
-    const token = signToken(user._id.toString(), user.email);
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900"
+                required
+              />
+            </div>
 
-    const response = NextResponse.json({
-      success: true,
-      user: { id: user._id, name: user.name, email: user.email }
-    });
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline font-semibold">
+                Forgot password?
+              </Link>
+            </div>
 
-    response.cookies.set('vicmart-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition disabled:opacity-60"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
 
-    return response;
-  } catch (error) {
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
-  }
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-blue-600 font-bold hover:underline">
+              Create one
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
