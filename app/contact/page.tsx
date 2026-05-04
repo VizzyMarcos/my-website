@@ -71,9 +71,9 @@ export default function ContactPage() {
               href="https://wa.me/2348166169609"
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-block text-base font-semibold text-white underline-offset-4 hover:underline"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-base font-extrabold text-slate-900 shadow-lg shadow-black/10 transition duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 hover:text-slate-950"
             >
-              Chat on WhatsApp
+              Chat on WhatsApp →
             </a>
           </div>
 
