@@ -7,7 +7,7 @@ import { cartStore } from "@/lib/store";
 
 export default function Navbar() {
   const { cart } = cartStore();
-  const cartCount = cart.length;
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 

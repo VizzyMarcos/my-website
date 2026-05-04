@@ -18,7 +18,11 @@ export default function ProductCard({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
 
   const handleAddToCart = () => {
-    addToCart(product.id.toString(), 1);
+    addToCart(product.id.toString(), 1, {
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
