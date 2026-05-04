@@ -126,6 +126,12 @@ export default function CartPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const user = await getLoggedInUser();
+    if (!user) {
+      redirectToLogin();
+      return;
+    }
+
     if (!customer.name || !customer.email || !customer.phone) {
       setStatusMessage('Please enter customer details');
       return;
@@ -133,12 +139,6 @@ export default function CartPage() {
 
     if (validCartItems.length === 0) {
       setStatusMessage('Your cart is empty');
-      return;
-    }
-
-    const user = await getLoggedInUser();
-    if (!user) {
-      redirectToLogin();
       return;
     }
 
