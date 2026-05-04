@@ -104,6 +104,7 @@ export default function CartPage() {
   const saveCheckoutAndRedirectToLogin = () => {
     localStorage.setItem('vicmart-checkout', JSON.stringify({ customer, paymentMethod }));
     localStorage.setItem('vicmart-post-login-redirect', '/cart');
+    localStorage.removeItem('vicmart-checkout-login-confirmed');
     localStorage.removeItem('vicmart-user');
     window.location.href = '/login?redirect=/cart';
   };
@@ -126,6 +127,12 @@ export default function CartPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const checkoutLoginConfirmed = localStorage.getItem('vicmart-checkout-login-confirmed') === 'true';
+    if (!checkoutLoginConfirmed) {
+      saveCheckoutAndRedirectToLogin();
+      return;
+    }
 
     const user = await getLoggedInUser();
     if (!user) {
@@ -183,10 +190,12 @@ export default function CartPage() {
         }
 
         window.location.href = initialize.data.data.authorization_url;
+        localStorage.removeItem('vicmart-checkout-login-confirmed');
         return;
       }
 
       clearCart();
+      localStorage.removeItem('vicmart-checkout-login-confirmed');
       setStatusMessage('Order created successfully! Payment method: none');
     } catch (error: unknown) {
       const checkoutError =

@@ -29,6 +29,9 @@ export default function LoginPage() {
       const res = await axios.post('/api/auth/login', formData);
       localStorage.setItem('vicmart-user', JSON.stringify(res.data.user));
       const redirect = getRedirectPath();
+      if (redirect === '/cart') {
+        localStorage.setItem('vicmart-checkout-login-confirmed', 'true');
+      }
       localStorage.removeItem('vicmart-post-login-redirect');
       router.push(redirect);
       router.refresh();
