@@ -21,12 +21,6 @@ interface CartItem {
 
 type PaymentMethod = 'none' | 'paystack';
 
-interface CheckoutUser {
-  id: string;
-  email: string;
-  name?: string;
-}
-
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart } = cartStore();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -101,34 +95,16 @@ export default function CartPage() {
   const validCartItems = cartItems.filter((item) => item.product && item.quantity > 0);
   const total = validCartItems.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
 
-  const redirectToLogin = () => {
-    localStorage.setItem('vicmart-checkout', JSON.stringify({ customer, paymentMethod }));
-    localStorage.removeItem('vicmart-user');
-    window.location.href = '/login?redirect=/cart';
-  };
-
-  const getLoggedInUser = async (): Promise<CheckoutUser | null> => {
-    try {
-      const response = await axios.get('/api/auth/me');
-      const savedUser = localStorage.getItem('vicmart-user');
-      const localUser = savedUser ? JSON.parse(savedUser) : {};
-
-      return {
-        id: response.data.user.id,
-        email: response.data.user.email,
-        name: localUser.name,
-      };
-    } catch {
-      return null;
-    }
-  };
-
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const user = await getLoggedInUser();
+    const userStored = typeof window !== 'undefined' ? localStorage.getItem('vicmart-user') : null;
+    const user = userStored ? JSON.parse(userStored) : null;
+
     if (!user) {
-      redirectToLogin();
+      // Save customer details and payment method before redirecting to login
+      localStorage.setItem('vicmart-checkout', JSON.stringify({ customer, paymentMethod }));
+      window.location.href = '/login?redirect=/cart';
       return;
     }
 
@@ -144,7 +120,7 @@ export default function CartPage() {
 
     try {
       const orderPayload = {
-        userId: user.id,
+        userId: user?.id || null,
         customerName: customer.name,
         customerEmail: customer.email,
         customerPhone: customer.phone,
