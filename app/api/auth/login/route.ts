@@ -4,16 +4,23 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { signToken } from '@/lib/auth';
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { email, password } = await request.json();
+    const normalizedEmail = typeof email === 'string' ? email.trim() : '';
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: 'i' },
+    });
     if (!user) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
