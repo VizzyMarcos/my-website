@@ -8,7 +8,14 @@ import axios from 'axios';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
+  const redirectParam = searchParams.get('redirect');
+
+  const getRedirectPath = () => {
+    const savedRedirect = localStorage.getItem('vicmart-post-login-redirect');
+    const redirect = redirectParam || savedRedirect || '/';
+
+    return redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
+  };
 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -21,6 +28,8 @@ export default function LoginPage() {
     try {
       const res = await axios.post('/api/auth/login', formData);
       localStorage.setItem('vicmart-user', JSON.stringify(res.data.user));
+      const redirect = getRedirectPath();
+      localStorage.removeItem('vicmart-post-login-redirect');
       router.push(redirect);
       router.refresh();
     } catch (err: any) {

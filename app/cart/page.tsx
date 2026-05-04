@@ -104,6 +104,7 @@ export default function CartPage() {
     if (!user) {
       // Save customer details and payment method before redirecting to login
       localStorage.setItem('vicmart-checkout', JSON.stringify({ customer, paymentMethod }));
+      localStorage.setItem('vicmart-post-login-redirect', '/cart');
       window.location.href = '/login?redirect=/cart';
       return;
     }
@@ -296,7 +297,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          <form onSubmit={handleCheckout} className="space-y-4">
+          <form onSubmit={handleCheckout} noValidate className="space-y-4">
             <input
               type="text"
               placeholder="Full Name"
