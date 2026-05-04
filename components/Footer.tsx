@@ -1,7 +1,9 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="mt-16 border-t border-slate-200/80 bg-white/85 backdrop-blur-xl">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-[1.6fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-[1.6fr_0.9fr]">
         <div>
           <div className="mb-4 flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-lg font-bold text-white">
@@ -21,23 +23,18 @@ export default function Footer() {
 
         <div>
           <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.2em] text-slate-500">
-            Explore
-          </h3>
-          <div className="space-y-3 text-sm font-medium text-slate-600">
-            <p>Products</p>
-            <p>Contact</p>
-            <p>Cart</p>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.2em] text-slate-500">
             Support
           </h3>
           <div className="space-y-3 text-sm font-medium text-slate-600">
-            <p>Secure Checkout</p>
-            <p>Order Assistance</p>
-            <p>Customer Care</p>
+            <Link href="/track-order" className="block transition hover:text-blue-600">
+              Track Order
+            </Link>
+            <Link href="/contact" className="block transition hover:text-blue-600">
+              Order Assistance
+            </Link>
+            <Link href="/contact" className="block transition hover:text-blue-600">
+              Customer Care
+            </Link>
           </div>
         </div>
       </div>
