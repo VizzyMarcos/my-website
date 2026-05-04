@@ -115,10 +115,6 @@ export default async function Home() {
               Popular products ready to order
             </h2>
           </div>
-          <p className="max-w-2xl section-copy text-sm md:text-base">
-            A curated mix of products customers can browse quickly and purchase
-            with confidence.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">

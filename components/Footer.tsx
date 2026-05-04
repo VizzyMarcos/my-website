@@ -32,9 +32,6 @@ export default function Footer() {
             <Link href="/contact" className="block transition hover:text-blue-600">
               Order Assistance
             </Link>
-            <Link href="/contact" className="block transition hover:text-blue-600">
-              Customer Care
-            </Link>
           </div>
         </div>
       </div>
