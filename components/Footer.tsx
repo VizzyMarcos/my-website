@@ -7,7 +7,7 @@ export default function Footer() {
         <div>
           <div className="mb-4 flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-lg font-bold text-white">V</span>
-            <span className="text-2xl font-extrabold tracking-tight text-slate-900">VicMart</span>
+            <Link href="/" className="text-2xl font-extrabold tracking-tight text-slate-900 transition hover:text-blue-600">VicMart</Link>
           </div>
           <p className="max-w-xl text-sm leading-7 text-slate-600">VicMart is a modern online store focused on reliable electronic gadgets and everyday tech essentials. We make it easy for customers to browse, compare, and pay securely in one smooth shopping experience.</p>
         </div>
@@ -27,3 +27,4 @@ export default function Footer() {
     </footer>
   );
 }
+
