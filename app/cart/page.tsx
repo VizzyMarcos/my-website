@@ -208,6 +208,43 @@ export default function CartPage() {
   }
 
   if (validCartItems.length === 0) {
+    if (statusMessage && statusMessage.startsWith('Payment confirmed')) {
+      const orderId = statusMessage.split('Order ')[1]?.replace('.', '');
+      return (
+        <div className="glass-panel rounded-[32px] px-6 py-16 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+            <svg className="h-10 w-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">
+            Payment Successful
+          </p>
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-slate-900">
+            Order Confirmed!
+          </h1>
+          <p className="mb-2 text-slate-500">Thank you for your purchase.</p>
+          <p className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-bold text-slate-700">
+            Order ID: <span className="text-blue-600">{orderId}</span>
+          </p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/track-order"
+              className="inline-flex rounded-full bg-slate-900 px-6 py-3 font-bold text-white transition hover:bg-blue-600"
+            >
+              Track Order
+            </Link>
+            <Link
+              href="/products"
+              className="inline-flex rounded-full border border-slate-200 px-6 py-3 font-bold text-slate-700 transition hover:bg-slate-100"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="glass-panel rounded-[32px] px-6 py-16 text-center">
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
@@ -238,7 +275,7 @@ export default function CartPage() {
         <h1 className="section-title text-slate-900">Review your order</h1>
       </div>
 
-      {statusMessage && (
+      {statusMessage && !statusMessage.startsWith('Payment confirmed') && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           {statusMessage}
         </div>
