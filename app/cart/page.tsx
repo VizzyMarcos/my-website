@@ -19,7 +19,7 @@ interface CartItem {
   product?: Product;
 }
 
-type PaymentMethod = 'none' | 'paystack';
+type PaymentMethod = 'paystack';
 
 interface CheckoutUser {
   id: string;
@@ -32,17 +32,15 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('none');
+  const [paymentMethod] = useState<PaymentMethod>('paystack');
   const [statusMessage, setStatusMessage] = useState('');
 
-  // Restore saved checkout details after login redirect
   useEffect(() => {
     const saved = localStorage.getItem('vicmart-checkout');
     if (saved) {
       try {
-        const { customer: savedCustomer, paymentMethod: savedMethod } = JSON.parse(saved);
+        const { customer: savedCustomer } = JSON.parse(saved);
         setCustomer(savedCustomer);
-        setPaymentMethod(savedMethod);
       } catch (_) {}
       localStorage.removeItem('vicmart-checkout');
     }
@@ -114,7 +112,6 @@ export default function CartPage() {
       const response = await axios.get('/api/auth/me');
       const savedUser = localStorage.getItem('vicmart-user');
       const localUser = savedUser ? JSON.parse(savedUser) : {};
-
       return {
         id: response.data.user.id,
         email: response.data.user.email,
@@ -176,27 +173,21 @@ export default function CartPage() {
 
       const orderId = orderResult.data.data._id;
 
-      if (paymentMethod === 'paystack') {
-        const initialize = await axios.post('/api/paystack', {
-          email: customer.email,
-          amount: total,
-          callbackUrl: `${window.location.origin}/cart?orderId=${orderId}`,
-          orderId,
-        });
+      const initialize = await axios.post('/api/paystack', {
+        email: customer.email,
+        amount: total,
+        callbackUrl: `${window.location.origin}/cart?orderId=${orderId}`,
+        orderId,
+      });
 
-        if (!initialize.data.success) {
-          setStatusMessage(`Paystack init failed: ${initialize.data.error}`);
-          return;
-        }
-
-        window.location.href = initialize.data.data.authorization_url;
-        localStorage.removeItem('vicmart-checkout-login-confirmed');
+      if (!initialize.data.success) {
+        setStatusMessage(`Paystack init failed: ${initialize.data.error}`);
         return;
       }
 
-      clearCart();
+      window.location.href = initialize.data.data.authorization_url;
       localStorage.removeItem('vicmart-checkout-login-confirmed');
-      setStatusMessage('Order created successfully! Payment method: none');
+
     } catch (error: unknown) {
       const checkoutError =
         axios.isAxiosError(error)
@@ -245,9 +236,6 @@ export default function CartPage() {
           Checkout
         </p>
         <h1 className="section-title text-slate-900">Review your order</h1>
-        <p className="section-copy max-w-2xl">
-          Confirm your products, enter delivery details, and complete payment securely.
-        </p>
       </div>
 
       {statusMessage && (
@@ -312,7 +300,6 @@ export default function CartPage() {
         <div className="glass-panel h-fit rounded-[30px] p-6 md:p-7">
           <div className="mb-6 space-y-2 border-b border-slate-200/80 pb-6">
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Order Summary</h2>
-            <p className="text-sm text-slate-500">Complete your details and choose how you want to pay.</p>
           </div>
 
           <div className="mb-6 space-y-3 border-b border-slate-200/80 pb-6 text-sm text-slate-600">
@@ -355,20 +342,12 @@ export default function CartPage() {
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               required
             />
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            >
-              <option value="none">Pay at pickup</option>
-              <option value="paystack">Paystack</option>
-            </select>
 
             <button
               type="submit"
-              className="button-glow w-full rounded-2xl bg-slate-900 py-3.5 font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-blue-600"
+              className="button-glow flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-blue-700"
             >
-              Complete Checkout
+              Pay with Paystack
             </button>
           </form>
         </div>
